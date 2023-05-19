@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
 
+from discord_oauth.exceptions import InvalidGrant
 from discord_oauth.oauth import Oauth, UnkownUser
 
 app = FastAPI()
@@ -32,30 +33,14 @@ async def root():
     return RedirectResponse(url="https://discord.com/app", status_code=302)
 
 
-@app.get("/join_all")
-async def joinall():
-    await app.auth.join_all()  # type: ignore
-    return "Done"
-
-
-@app.get("/refresh_all")
-async def refresh():
-    await app.auth.join_all()  # type: ignore
-    await app.auth.refresh_all()  # type: ignore
-    return "Done"
-
-
 @app.get("/callback")
 async def callback(code: Optional[str] = None):
     if code:
         try:
-            await app.auth.validate_user(code=code, role_id="1108496066111885322")  # type: ignore
-        except UnkownUser:
+            await app.auth.validate_user(code=code, role_id="1094475828903035043")  # type: ignore
+        except (UnkownUser, InvalidGrant):
             ...
-
-    return RedirectResponse(
-        url=f"https://discord.com/app", status_code=302  # type: ignore
-    )
+    return RedirectResponse(url="https://discord.com/app", status_code=302)
 
 
 @app.get("/auth")

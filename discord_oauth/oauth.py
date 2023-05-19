@@ -1,7 +1,6 @@
 from typing import Any, Dict, Literal, Optional, Tuple
 
 import aiohttp
-from aiocache import cached
 from motor.motor_asyncio import AsyncIOMotorClient
 
 from .exceptions import (AccessTokenExpired, InvalidGrant, RateLimited,
@@ -27,7 +26,7 @@ class Oauth:
         self.redirect_uri = redirect_uri
         self.session = session
         self.__bot_token = bot_token
-        client = AsyncIOMotorClient(mongo_uri)  # pymongo.MongoClient(mongo_uri).oauth
+        client = AsyncIOMotorClient(mongo_uri)
         self.db = client.get_database("oauth")
         self.guild_id = guild_id
         """
@@ -40,7 +39,6 @@ class Oauth:
         :param guild_id: The guild id to use
         """
 
-    @cached(ttl=600)
     async def __request(
         self,
         route: str,
@@ -182,7 +180,7 @@ class Oauth:
                 },
             )
         except InvalidGrant:
-            await self.db.get_collection("users").delete_one({"_id": user_id})
+            self.db.get_collection("users").delete_one({"_id": user_id})
             return
 
         await self.update_db(
@@ -228,24 +226,6 @@ class Oauth:
             raise AccessTokenExpired
         else:
             raise Exception(status, response)
-
-    async def join_all(self) -> None:
-        """
-        Joins all users to the guild
-        """
-        async for user in self.db.get_collection("users").find():
-            try:
-                await self.join(user_id=user["_id"])
-            except (AccessTokenExpired, InvalidGrant):
-                await self.set_refresh_token(user_id=user["_id"])
-                await self.join(user_id=user["_id"])
-
-    async def refresh_all(self) -> None:
-        """
-        Refreshes all access tokens
-        """
-        async for user in self.db.get_collection("users").find():
-            await self.set_refresh_token(user_id=user["_id"])
 
     async def validate_user(self, role_id: str, code: str) -> bool:
         """
