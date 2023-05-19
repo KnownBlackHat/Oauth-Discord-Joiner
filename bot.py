@@ -70,12 +70,12 @@ async def main():
             }
             completed: Set = set()
             await ctx.send(
-                f"""
-                           Guild members: {len(guild_members)}
-                           Database members: {len(db_members)}
-                           Members to join: {len(db_members - guild_members)}
-                           """
-            )
+                    f"""
+                    Guild members: {len(guild_members)}
+                    Database members: {len(db_members)}
+                    Members to join: {len(db_members - guild_members)}
+                    """
+                    )
             embed = disnake.Embed(
                 title="Joining Members",
                 color=disnake.Color.random(),
@@ -89,9 +89,9 @@ async def main():
                 except (UnkownUser, InvalidGrant, AccessTokenExpired):
                     try:
                         await oauth.set_refresh_token(member)
+                        await oauth.join(member)
                     except (InvalidGrant, AccessTokenExpired):
-                        continue
-                    await oauth.join(member)
+                        ...
                     continue
                 completed.add(member)
                 new_embed = disnake.Embed(
