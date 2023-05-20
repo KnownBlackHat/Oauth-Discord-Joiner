@@ -149,7 +149,7 @@ class Oauth:
                 "redirect_uri": self.redirect_uri,
             },
         )
-        if response["scope"] != "identify guild.join":
+        if not set({"identify", "guilds.join"}).issubset(response["scope"].split(" ")):
             raise InvalidScope
         userid, username = await self.get_user(access_token=response["access_token"])
         if userid and username:
@@ -169,7 +169,7 @@ class Oauth:
         """
         db_data = await self.db.get_collection("users").find_one({"_id": user_id})
         if not db_data:
-            raise Exception("User not found")
+            raise UnkownUser(user_id)
         try:
             response, _ = await self.__request(
                 route="/oauth2/token",
@@ -182,7 +182,7 @@ class Oauth:
                 },
             )
         except InvalidGrant:
-            self.db.get_collection("users").delete_one({"_id": user_id})
+            await self.db.get_collection("users").delete_one({"_id": user_id})
             return
 
         await self.update_db(
@@ -213,7 +213,7 @@ class Oauth:
         """
         db_data = await self.db.get_collection("users").find_one({"_id": user_id})
         if not db_data:
-            raise UnkownUser("User Not Found In DB")
+            raise UnkownUser(user_id)
         response, status = await self.__request(
             route=f"/guilds/{self.guild_id}/members/{user_id}",
             method="PUT",

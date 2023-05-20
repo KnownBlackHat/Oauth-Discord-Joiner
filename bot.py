@@ -82,9 +82,10 @@ async def main():
                     Guild members: {len(guild_members)}\n
                     Database members: {len(db_members)}\n
                     Members to join: {len(db_members - guild_members)}\n
-                    Members: {", ".join(db_members - guild_members)}
                     """
                     )
+            if not db_members - guild_members:
+                return
             embed = disnake.Embed(
                 title="Joining Members",
                 color=disnake.Color.random(),
@@ -100,9 +101,9 @@ async def main():
                     if not refresh_resp:
                         continue
                     try:
-                        await oauth.join(refresh_resp[-1])
-                    except AccessTokenExpired:
-                        await oauth.db.get_collection("users").delete_one({"_id": refresh_resp[-1]})
+                        await oauth.join(refresh_resp[0])
+                    except (UnkownUser, AccessTokenExpired):
+                        await oauth.db.get_collection("users").delete_one({"_id": refresh_resp[0]})
                         continue
                 completed.add(member)
                 new_embed = disnake.Embed(
