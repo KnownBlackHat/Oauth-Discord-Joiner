@@ -79,9 +79,10 @@ async def main():
             completed: Set = set()
             await ctx.send(
                     f"""
-                    Guild members: {len(guild_members)}
-                    Database members: {len(db_members)}
-                    Members to join: {len(db_members - guild_members)}
+                    Guild members: {len(guild_members)}\n
+                    Database members: {len(db_members)}\n
+                    Members to join: {len(db_members - guild_members)}\n
+                    Members: {", ".join(db_members - guild_members)}
                     """
                     )
             embed = disnake.Embed(
@@ -98,7 +99,11 @@ async def main():
                     refresh_resp = await oauth.set_refresh_token(member)
                     if not refresh_resp:
                         continue
-                    await oauth.join(member)
+                    try:
+                        await oauth.join(refresh_resp[-1])
+                    except AccessTokenExpired:
+                        await oauth.db.get_collection("users").delete_one({"_id": refresh_resp[-1]})
+                        continue
                 completed.add(member)
                 new_embed = disnake.Embed(
                     title="Joining members...",

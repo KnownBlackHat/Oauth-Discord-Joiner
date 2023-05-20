@@ -20,3 +20,7 @@ class UnkownUser(Exception):
 
 class InvalidToken(Exception):
     """An Exception raised when an invalid token is used."""
+
+
+class InvalidScope(Exception):
+    """An Exception raised when an invalid scope is used."""

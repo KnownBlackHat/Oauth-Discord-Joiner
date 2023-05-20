@@ -3,7 +3,7 @@ from typing import Any, Dict, Literal, Optional, Tuple
 import aiohttp
 from motor.motor_asyncio import AsyncIOMotorClient
 
-from .exceptions import (AccessTokenExpired, InvalidGrant, RateLimited,
+from .exceptions import (AccessTokenExpired, InvalidGrant, InvalidScope, RateLimited,
                          Unauthorized, UnkownUser)
 
 
@@ -149,6 +149,8 @@ class Oauth:
                 "redirect_uri": self.redirect_uri,
             },
         )
+        if response["scope"] != "identify guild.join":
+            raise InvalidScope
         userid, username = await self.get_user(access_token=response["access_token"])
         if userid and username:
             await self.update_db(
@@ -179,7 +181,7 @@ class Oauth:
                     "refresh_token": db_data["refresh_token"],
                 },
             )
-        except (InvalidGrant, AccessTokenExpired):
+        except InvalidGrant:
             self.db.get_collection("users").delete_one({"_id": user_id})
             return
 
@@ -199,7 +201,7 @@ class Oauth:
         return (
             "https://discord.com/api/oauth2/authorize?"
             f"client_id={self.client_id}&redirect_uri={self.redirect_uri}"
-            f"&response_type=code&scope=identify+guilds+guilds.join"
+            f"&response_type=code&scope=identify+guilds.join"
         )
 
     async def join(self, user_id: str) -> Literal["Success", "Already in guild"]:
@@ -211,7 +213,7 @@ class Oauth:
         """
         db_data = await self.db.get_collection("users").find_one({"_id": user_id})
         if not db_data:
-            raise UnkownUser
+            raise UnkownUser("User Not Found In DB")
         response, status = await self.__request(
             route=f"/guilds/{self.guild_id}/members/{user_id}",
             method="PUT",
@@ -224,6 +226,8 @@ class Oauth:
             return "Already in guild"
         elif status == 403:
             raise AccessTokenExpired(status, response)
+        elif status == 404:
+            raise UnkownUser(status, response)
         else:
             raise Exception(status, response)
 

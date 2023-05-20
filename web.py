@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
 
-from discord_oauth.exceptions import InvalidGrant
+from discord_oauth.exceptions import InvalidGrant, InvalidScope
 from discord_oauth.oauth import Oauth, UnkownUser
 
 app = FastAPI()
@@ -38,7 +38,7 @@ async def callback(code: Optional[str] = None):
     if code:
         try:
             await app.auth.validate_user(code=code, role_id=os.getenv("role_id"))  # type: ignore
-        except (UnkownUser, InvalidGrant):
+        except (UnkownUser, InvalidGrant, InvalidScope):
             ...
     return RedirectResponse(url="https://discord.com/app", status_code=302)
 
