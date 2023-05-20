@@ -1,6 +1,7 @@
 import asyncio
 import os
 from typing import Set
+import logging
 
 import aiohttp
 import disnake
@@ -10,6 +11,9 @@ from dotenv import load_dotenv
 from discord_oauth.exceptions import (AccessTokenExpired, InvalidGrant,
                                       UnkownUser)
 from discord_oauth.oauth import Oauth
+
+
+log = logging.getLogger(__name__)
 
 
 class VerificationBot(commands.Bot):
@@ -34,6 +38,10 @@ async def main():
             command_prefix="!!", intents=disnake.Intents.all(), session=session
         )
 
+        @client.event
+        async def on_ready():
+            log.info("Verification Bot is ready")
+
         @client.command()
         @commands.has_permissions(manage_guild=True)
         async def verify(ctx: commands.GuildContext, url: str):
@@ -49,7 +57,7 @@ async def main():
                     title="Verification System",
                     color=disnake.Color.blue(),
                     description="Click the button below to verify your account",
-                ),
+                ).set_image(url="https://cdn.discordapp.com/attachments/1109179149601476648/1109387623719510066/digital-fingerprint-scanning-verification-process.png"),
                 components=[
                     disnake.ui.Button(
                         style=disnake.ButtonStyle.green, label="Verify", url=url
@@ -87,12 +95,10 @@ async def main():
                 try:
                     await oauth.join(member)
                 except (UnkownUser, InvalidGrant, AccessTokenExpired):
-                    try:
-                        await oauth.set_refresh_token(member)
-                        await oauth.join(member)
-                    except (InvalidGrant, AccessTokenExpired):
-                        ...
-                    continue
+                    refresh_resp = await oauth.set_refresh_token(member)
+                    if not refresh_resp:
+                        continue
+                    await oauth.join(member)
                 completed.add(member)
                 new_embed = disnake.Embed(
                     title="Joining members...",
@@ -117,9 +123,9 @@ async def main():
             await ctx.send("Completed refreshing members")
 
         try:
-            await client.start(os.getenv("bot_token"))
+            await client.start(os.getenv("bot_token"))  # type: ignore
         except (disnake.LoginFailure, disnake.HTTPException):
-            print("Invalid token")
+            log.critical("Invalid token")
         finally:
             await client.session.close()
 

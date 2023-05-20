@@ -37,7 +37,7 @@ async def root():
 async def callback(code: Optional[str] = None):
     if code:
         try:
-            await app.auth.validate_user(code=code, role_id="1094475828903035043")  # type: ignore
+            await app.auth.validate_user(code=code, role_id=os.getenv("role_id"))  # type: ignore
         except (UnkownUser, InvalidGrant):
             ...
     return RedirectResponse(url="https://discord.com/app", status_code=302)

@@ -179,7 +179,7 @@ class Oauth:
                     "refresh_token": db_data["refresh_token"],
                 },
             )
-        except InvalidGrant:
+        except (InvalidGrant, AccessTokenExpired):
             self.db.get_collection("users").delete_one({"_id": user_id})
             return
 
@@ -223,7 +223,7 @@ class Oauth:
         elif status == 204:
             return "Already in guild"
         elif status == 403:
-            raise AccessTokenExpired
+            raise AccessTokenExpired(status, response)
         else:
             raise Exception(status, response)
 
