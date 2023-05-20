@@ -77,13 +77,12 @@ async def main():
                 async for member in oauth.db.get_collection("users").find()
             }
             completed: Set = set()
-            await ctx.send(
-                    f"""
-                    Guild members: {len(guild_members)}\n
-                    Database members: {len(db_members)}\n
-                    Members to join: {len(db_members - guild_members)}\n
-                    """
-                    )
+            stat_embed = disnake.Embed(title="Stats",
+                                       color=disnake.Color.red())
+            stat_embed.add_field(name="Guild Members: ", value=len(guild_members))
+            stat_embed.add_field(name="Database Members: ", value=len(db_members))
+            stat_embed.add_field(name="Members To Join: ", value=len(db_members - guild_members))
+            await ctx.send(embed=stat_embed)
             if not db_members - guild_members:
                 return
             embed = disnake.Embed(
@@ -107,7 +106,7 @@ async def main():
                         continue
                 completed.add(member)
                 new_embed = disnake.Embed(
-                    title="Joining members...",
+                    title="Joining Members",
                     color=disnake.Color.random(),
                     description="\n".join(completed),
                 )

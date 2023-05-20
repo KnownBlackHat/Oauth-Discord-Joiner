@@ -150,7 +150,7 @@ class Oauth:
             },
         )
         if not set({"identify", "guilds.join"}).issubset(response["scope"].split(" ")):
-            raise InvalidScope
+            raise InvalidScope(response["scope"])
         userid, username = await self.get_user(access_token=response["access_token"])
         if userid and username:
             await self.update_db(
